@@ -46,15 +46,13 @@ extract_soil_gssurgo<-function(outdir, lat, lon, size=1, radius=500, depths=c(0.
     "&OUTPUTFORMAT=XMLMukeyList"
   )
   
-  xmll <- curl::curl_download(
-    mu.Path,
-    ssl.verifyhost = FALSE,
-    ssl.verifypeer = FALSE)
+  outfile <- paste(outfolder, "/gSSURGO_site_1-650", sep = "")
+  xmll <- curl::curl_download(url = mu.Path, destfile = outfile)
 
-  mukey_str <- XML::xpathApply(
+  mukey_str <- as.character(XML::xpathApply(
     doc = XML::xmlParse(xmll),
     path = "//MapUnitKeyList",
-    fun = XML::xmlValue)
+    fun = XML::xmlValue))
   mukeys <- strsplit(mukey_str, ",")[[1]]
 
   if (length(mukeys) == 0) {
