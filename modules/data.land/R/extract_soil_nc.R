@@ -46,7 +46,7 @@ extract_soil_gssurgo<-function(outdir, lat, lon, size=1, radius=500, depths=c(0.
     "&OUTPUTFORMAT=XMLMukeyList"
   )
   
-  outfile <- paste(outfolder, "/gSSURGO_site_1-650", sep = "")
+  outfile <- paste(outdir, "/gSSURGO_site_1-650", sep = "")
   xmll <- curl::curl_download(url = mu.Path, destfile = outfile)
 
   mukey_str <- as.character(XML::xpathApply(
