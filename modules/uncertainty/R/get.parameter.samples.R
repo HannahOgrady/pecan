@@ -136,7 +136,12 @@ get.parameter.samples <- function(settings,
     if(is.null(priors)) priors = param.names[[i]]
     
     PEcAn.logger::logger.info("using ", samples.num, "samples per trait")
-    if (ens.sample.method == "halton") {
+    if (is.null(ens.sample.method)){
+      PEcAn.logger::logger.info("Sampling method is not defined, set to uniform")
+      q_samples <- matrix(stats::runif(samples.num * length(priors)),
+                          samples.num, 
+                          length(priors))
+    } else if(ens.sample.method == "halton") {
       q_samples <- randtoolbox::halton(n = samples.num, dim = length(priors))
     } else if (ens.sample.method == "sobol") {
       q_samples <- randtoolbox::sobol(n = samples.num, dim = length(priors), scrambling = 3)
@@ -207,3 +212,4 @@ get.parameter.samples <- function(settings,
   save(ensemble.samples, trait.samples, sa.samples, runs.samples, env.samples, 
        file = file.path(settings$outdir, "samples.Rdata"))
 } # get.parameter.samples
+
