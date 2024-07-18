@@ -25,15 +25,15 @@
 write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id) {
   
   # find out where to write run/ouput
-  rundir <- file.path(settings$host$rundir, run.id)
+  rundir <- file.path(settings$rundir, run.id)
   if (!file.exists(rundir)) {
     dir.create(rundir)
   }
-  outdir <- file.path(settings$host$outdir, run.id)
+  outdir <- file.path(settings$outdir, "out", run.id)
   if (!file.exists(outdir)) {
     dir.create(outdir)
   }
-  
+
   #-----------------------------------------------------------------------
   # write LPJ-GUESS specific instruction file
   settings <- write.insfile.LPJGUESS(settings, trait.values, rundir, outdir, run.id)
@@ -46,7 +46,7 @@ write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id) {
     jobsh <- readLines(con = system.file("template.job", package = "PEcAn.LPJGUESS"), n = -1)
   }
   
-  # create host specific setttings
+  # create host specific settings
   hostsetup <- ""
   if (!is.null(settings$model$prerun)) {
     hostsetup <- paste(hostsetup, sep = "\n", paste(settings$model$prerun, collapse = "\n"))

@@ -170,6 +170,17 @@ run.write.configs <- function(settings, write = TRUE, ens.sample.method = "unifo
     PEcAn.logger::logger.info("not writing config files for ensemble, settings are NULL")
   }  ### End of Ensemble
   
+  # Create runs.txt file if not doing ensemble or sensitivity analysis (otherwise none is written)
+  # TODO: Add an option to register run to bety.
+  if(!any(c("ensemble", "sensitivity.analysis") %in% names(settings)){
+    run.ids <- PEcAn.utils::get.run.id("basic", index = 1)
+    cat(run.ids,
+        file = file.path(settings$rundir, "runs.txt"), 
+        sep = "\n", 
+        append = FALSE)
+  }
+
+  
   PEcAn.logger::logger.info("###### Finished writing model run config files #####")
   PEcAn.logger::logger.info("config files samples in ", file.path(settings$outdir, "run"))
   

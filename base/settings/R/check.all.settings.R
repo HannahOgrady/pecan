@@ -260,6 +260,7 @@ check.bety.version <- function(dbcon) {
   }
 
   # check if database is newer
+  source("~/pecan/base/settings/R/known_bety_migrations.R")
   unknown_migrations <- setdiff(versions, .known_bety_migrations)
   if (any(unknown_migrations)) {
     PEcAn.logger::logger.warn(
