@@ -73,8 +73,16 @@ write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id) {
   jobsh <- gsub("@START_DATE@", settings$run$start.date, jobsh)
   jobsh <- gsub("@END_DATE@", settings$run$end.date, jobsh)
   
-  jobsh <- gsub("@OUTDIR@", outdir, jobsh)
-  jobsh <- gsub("@RUNDIR@", rundir, jobsh)
+  if(is.localhost(settings$host)){
+    jobsh <- gsub("@OUTDIR@", outdir, jobsh)
+    jobsh <- gsub("@RUNDIR@", rundir, jobsh)
+  } else {
+    host_outdir <- paste(settings$host$outdir, run.id, sep = "/")
+    host_rundir <- paste(settings$host$rundir, run.id, sep = "/")
+    jobsh <- gsub('@OUTDIR@', host_outdir, jobsh)
+    jobsh <- gsub('@RUNDIR@', host_rundir, jobsh)
+    }
+ 
   
   jobsh <- gsub("@BINARY@", settings$model$binary, jobsh)
   jobsh <- gsub("@INSFILE@", settings$model$insfile, jobsh)
