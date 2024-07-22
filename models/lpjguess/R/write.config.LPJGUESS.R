@@ -102,7 +102,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   pftblock  <- paramsins[pftindx] # lines with pft params
   
   # create the grid indices file
-  grid.file <- file.path(settings$host$rundir, "gridind.txt")
+  grid.file <- file.path(rundir, "gridind.txt")
   gridind   <- readLines(con = system.file("gridind.txt", package = "PEcAn.LPJGUESS"), n = -1)
   writeLines(gridind, grid.file)
   guessins  <- gsub("@GRID_FILE@", grid.file, guessins)
@@ -312,3 +312,4 @@ pecan2lpjguess <- function(trait.values){
   
   return(trait.values)
 } 
+
