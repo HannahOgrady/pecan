@@ -110,7 +110,11 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   pftblock  <- paramsins[pftindx] # lines with pft params
   
   # create the grid indices file
-  grid.file <- file.path(rundir, "gridind.txt")
+  if(!is.localhost(settings$host)){
+    grid.file <- file.path(settings$host$rundir, "gridind.txt")
+  }else{
+    grid.file <- file.path(rundir, "gridind.txt")
+  }
   gridind   <- readLines(con = system.file("gridind.txt", package = "PEcAn.LPJGUESS"), n = -1)
   writeLines(gridind, grid.file)
   guessins  <- gsub("@GRID_FILE@", grid.file, guessins)
@@ -194,8 +198,14 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   start.year <- lubridate::year(settings$run$start.date)
   end.year <- lubridate::year(settings$run$end.date)
   n.year <- length(start.year:end.year)
-  co2.file <- file.path(settings$rundir, 
-                        paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
+  if(is.localhost(settings$host)){
+    co2.file <- file.path(settings$rundir, 
+                          paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
+  }else{
+    co2.file <- file.path(settings$host$rundir, 
+                          paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
+  }
+ 
   
   # for pre-industrial values just use 280 ppm
   if (end.year < 1850) {
@@ -219,7 +229,11 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   soil.file <- settings$run$inputs$soil$path
   guessins <- gsub("@SOIL_FILE@", soil.file, guessins)
   
-  settings$model$insfile <- file.path(settings$rundir, run.id, "guess.ins")
+  if(is.localhost(settings$host)){
+    settings$model$insfile <- file.path(settings$rundir, run.id, "guess.ins")
+  }else{
+    settings$model$insfile <- file.path(settings$host$rundir, run.id, "guess.ins")
+  }
   
   writeLines(paramsins, con = file.path(settings$rundir, run.id, "params.ins"))
   writeLines(guessins, con = file.path(settings$rundir, run.id, "guess.ins"))
