@@ -111,13 +111,18 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   # create the grid indices file
   if(!is.localhost(settings$host)){
-    grid.file <- file.path(settings$host$rundir, "gridind.txt")
-  }else{
-    grid.file <- file.path(rundir, "gridind.txt")
+    grid.file.host <- file.path(settings$host$rundir, "gridind.txt")
   }
+  grid.file <- file.path(rundir, "gridind.txt")
+  
   gridind   <- readLines(con = system.file("gridind.txt", package = "PEcAn.LPJGUESS"), n = -1)
   writeLines(gridind, grid.file)
-  guessins  <- gsub("@GRID_FILE@", grid.file, guessins)
+  if(is.localhost(settings$host)){
+    guessins <- gsub("@GRID_FILE@", grid.file, guessins)
+  }else{
+    guessins  <- gsub("@GRID_FILE@", grid.file.host, guessins)
+  }
+  
   
   pft_names <- sapply(settings$pfts, `[[`,"name")
   load(system.file("lpjguess_params.Rdata",package = "PEcAn.LPJGUESS"))
@@ -198,14 +203,12 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   start.year <- lubridate::year(settings$run$start.date)
   end.year <- lubridate::year(settings$run$end.date)
   n.year <- length(start.year:end.year)
-  if(is.localhost(settings$host)){
-    co2.file <- file.path(settings$rundir, 
-                          paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
-  }else{
-    co2.file <- file.path(settings$host$rundir, 
+  if(!is.localhost(settings$host)){
+    co2.file.host <- file.path(settings$host$rundir, 
                           paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
   }
- 
+  co2.file <- file.path(settings$rundir, 
+                        paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
   
   # for pre-industrial values just use 280 ppm
   if (end.year < 1850) {
@@ -223,7 +226,13 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
     PEcAn.logger::logger.severe("End year should be < 2021 for CO2")
   }
   write.table(CO2, file = co2.file, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
-  guessins <- gsub("@CO2_FILE@", co2.file, guessins)
+  
+  if(is.localhost(settings$host)){
+    guessins <- gsub("@CO2_FILE@", co2.file, guessins)
+  }else{
+    guessins <- gsub("@CO2_FILE@", co2.file.host, guessins)
+  }
+ 
   
   # write soil file path
   soil.file <- settings$run$inputs$soil$path
