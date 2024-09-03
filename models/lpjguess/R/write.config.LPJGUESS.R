@@ -132,7 +132,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   # these are strings, should they be passed via xml?
   # e.g. defaults lifeform=tree phenology=evergreen leafphysiognomy=broadleaf landcover=natural pathway=c3
-  noprior_params <- c("lifeform", "phenology", "leafphysiognomy", "landcover", "pathway")
+  noprior_params <- c("lifeform", "phenology", "leafphysiognomy", "landcover", "pathway", "rootdist")
   
   write2pftblock <-  vector("list", length(settings$pfts))
   # write params with values from trait.values
@@ -191,7 +191,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   # write clim file names
   
-  tmp.file <- settings$run$inputs$met$path
+  tmp.file <- settings$run$inputs$met$path #Only works if you passed in a path for met inputs. Does not work if you use auto-gen met inputs. 
   pre.file <- gsub(".tmp.nc", ".pre.nc", tmp.file)
   cld.file <- gsub(".tmp.nc", ".cld.nc", tmp.file)
   
@@ -269,7 +269,7 @@ pecan2lpjguess <- function(trait.values){
     "ci2ca", "lambda_max", NA, NA,         
     "Emax", "emax", NA, NA,
     "reprfrac", "reprfrac", NA, NA,
-    "water_stress_threshold", "wscal_min", NA, NA,
+    "water_stress_threshold", "wscal_min", NA, NA,#No units specified anywhere. Assuming the same.
     "drought_tolerance", "drought_tolerance", NA, NA,
     "turnover_harv_prod", "turnover_harv_prod", NA, NA, 
     "crownarea_max", "crownarea_max", NA, NA,
@@ -278,7 +278,7 @@ pecan2lpjguess <- function(trait.values){
     "k_allom2", "k_allom2", NA, NA,           
     "k_allom3", "k_allom3", NA, NA,          
     "k_rp", "k_rp", NA, NA,               
-    "wood_density", "wooddens", NA, NA,           
+    "wooddens", "wooddens", NA, NA,           
     "c2n_fineroot", "cton_root", NA, NA,
     "c2n_sapwood", "cton_sap", NA, NA,           
     "nup2root_max", "nuptoroot", NA, NA,
@@ -320,7 +320,8 @@ pecan2lpjguess <- function(trait.values){
     "eps_iso", "eps_iso", NA, NA,
     "seas_iso", "seas_iso", NA, NA,
     "eps_mon", "eps_mon", NA, NA,
-    "storfrac_mon", "storfrac_mon", NA, NA)
+    "storfrac_mon", "storfrac_mon", NA, NA, 
+    "broad_leaved", "broad_leaved", NA, NA)
   
   trait.values <- lapply(trait.values, function(x){
     names(x) <- vartable$lpjguessname[match(names(x), vartable$pecanname)]
@@ -328,18 +329,20 @@ pecan2lpjguess <- function(trait.values){
   })
   
   # TODO : unit conversions?
-  toconvert <- vartable$lpjguessname[!is.na(vartable$lpjguessunits)]
-  trait.values <- lapply(trait.values, function(x){
-    canconvert <- toconvert[toconvert %in% names(x)]      
-    if(length(canconvert) != 0){
-      for(c in seq_along(canconvert)){
-        x[,names(x) == canconvert[c]] <- PEcAn.utils::ud_convert(x[,names(x) == canconvert[c]], 
-                                                              vartable$pecanunits[vartable$lpjguessname == canconvert[c]], 
-                                                              vartable$lpjguessunits[vartable$lpjguessname == canconvert[c]])
-      }
-    }
-    return(x)
-  })
+  # toconvert <- vartable$lpjguessname[!is.na(vartable$lpjguessunits)]
+  # trait.values <- lapply(trait.values, function(x){
+  #   for(i in 1:length(x)){ #loop over list of PFTs
+  #     canconvert <- toconvert[toconvert %in% names(x[[i]])]  
+  #     if(length(canconvert) != 0){
+  #       for(c in seq_along(canconvert)){
+  #         x[,names(x) == canconvert[c]] <- PEcAn.utils::ud_convert(x[,names(x) == canconvert[c]], 
+  #                                                                  vartable$pecanunits[vartable$lpjguessname == canconvert[c]], 
+  #                                                                  vartable$lpjguessunits[vartable$lpjguessname == canconvert[c]])
+  #       }
+  #     }
+  #   }#End loop over PFTs
+  #   return(x)
+  # })
   
   return(trait.values)
 } 
