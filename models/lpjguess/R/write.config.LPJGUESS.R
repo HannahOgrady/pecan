@@ -173,8 +173,12 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
       # handle the no prior params
       for(t in seq_along(noprior_params)){
         trait_name <- noprior_params[t]
-        if(!is.null(settings$pfts[[i]][[trait_name]])){ # specified in xml
-          write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), paste0("'", settings$pfts[[i]][[trait_name]], "'"), write2pftblock[[i]])
+        if(!is.null(settings$pfts[[i]][[trait_name]])){ # specified in xml and isn't rootdist
+          if(trait_name == "rootdist"){#Rootdist should not come with quotes. It is expected to be numerical
+            write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), settings$pfts[[i]][[trait_name]], write2pftblock[[i]])
+          }else{
+            write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), paste0("'", settings$pfts[[i]][[trait_name]], "'"), write2pftblock[[i]])
+          }
         }else{ #pass the default, add to warning
           write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), paste0("'", lpjguess_param_list[[trait_name]], "'"), write2pftblock[[i]])
           warning_list[[trait_name]] <- trait_name
