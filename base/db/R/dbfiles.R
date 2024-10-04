@@ -1,12 +1,3 @@
-#-------------------------------------------------------------------------------
-# Copyright (c) 2012 University of Illinois, NCSA.
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the
-# University of Illinois/NCSA Open Source License
-# which accompanies this distribution, and is available at
-# http://opensource.ncsa.illinois.edu/license.html
-#-------------------------------------------------------------------------------
-
 ##' Function to insert a file into the dbfiles table as an input
 ##'
 ##' This will write into the dbfiles, inputs, machines and formats the required
@@ -71,7 +62,7 @@ dbfile.input.insert <- function(in.path, in.prefix, siteid, startdate, enddate, 
       "SELECT * FROM inputs WHERE site_id=", siteid,
       " AND name= '", name,
       "' AND format_id=", formatid,
-      parent
+      parent, ";"
     ),
     con = con
   )
@@ -120,26 +111,26 @@ dbfile.input.insert <- function(in.path, in.prefix, siteid, startdate, enddate, 
         "INSERT INTO inputs ",
         "(site_id, format_id, name) VALUES (",
         siteid, ", ", formatid, ", '", name,
-        "'", ") RETURNING id"
+        "'", ") RETURNING id;"
       )
     } else if (parent == "" && !is.null(startdate)) {
       cmd <- paste0(
         "INSERT INTO inputs ",
         "(site_id, format_id, start_date, end_date, name) VALUES (",
         siteid, ", ", formatid, ", '", startdate, "', '", enddate, "','", name,
-        "') RETURNING id"
+        "') RETURNING id;"
       )
     } else if (is.null(startdate)) {
       cmd <- paste0(
         "INSERT INTO inputs ",
         "(site_id, format_id, name, parent_id) VALUES (",
-        siteid, ", ", formatid, ", '", name, "',", parentid, ") RETURNING id"
+        siteid, ", ", formatid, ", '", name, "',", parentid, ") RETURNING id;"
       )
     } else {
       cmd <- paste0(
         "INSERT INTO inputs ",
         "(site_id, format_id, start_date, end_date, name, parent_id) VALUES (",
-        siteid, ", ", formatid, ", '", startdate, "', '", enddate, "','", name, "',", parentid, ") RETURNING id"
+        siteid, ", ", formatid, ", '", startdate, "', '", enddate, "','", name, "',", parentid, ") RETURNING id;"
       )
     }
     # This is the id that we just registered
@@ -150,7 +141,7 @@ dbfile.input.insert <- function(in.path, in.prefix, siteid, startdate, enddate, 
       inputid <- db.query(
         query = paste0(
           "SELECT id FROM inputs WHERE site_id=", siteid,
-          " AND format_id=", formatid
+          " AND format_id=", formatid, ";"
         ),
         con = con
       )$id
@@ -248,7 +239,7 @@ dbfile.input.check <- function(siteid, startdate = NULL, enddate = NULL, mimetyp
   }
 
   # find appropriate format
-  formatid <- get.id(table = "formats", colnames = c("mimetype_id", "name"), values = c(mimetypeid, formatname), con = con)
+  formatid <- get.id(table = "formats", colnames = c("mimetype_id", "name"), values = c(as.character(mimetypeid), as.character(formatname)), con = con)
 
   if (is.null(formatid)) {
     invisible(data.frame())

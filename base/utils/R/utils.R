@@ -186,6 +186,7 @@ get.run.id <- function(run.type, index, trait = NULL, pft.name = NULL, site.id=N
 ##' @return data frame with back-transformed log density estimate
 ##' @author \href{https://stats.stackexchange.com/q/6588/2750}{Rob Hyndman}
 ##' @references M. P. Wand, J. S. Marron and D. Ruppert, 1991. Transformations in Density Estimation. Journal of the American Statistical Association. 86(414):343-353 \url{http://www.jstor.org/stable/2290569}
+##' @export
 zero.bounded.density <- function(x, bw = "SJ", n = 1001) {
   y     <- log(x)
   g     <- stats::density(y, bw = bw, n = n)
@@ -669,7 +670,7 @@ convert.expr <- function(expression) {
 ##' @author Shawn Serbin, Rob Kooper
 download_file <- function(url, filename, method) {
   if (startsWith(url, "ftp://")) {
-    method <- if (missing(method)) getOption("download.ftp.method", default = "auto")
+    if (missing(method)) method <- getOption("download.ftp.method", default = "auto")
     if (method == "ncftpget") {
       PEcAn.logger::logger.debug(paste0("FTP Method: ",method))
       #system2("ncftpget", c("-c", "url", ">", filename))
@@ -706,7 +707,7 @@ download_file <- function(url, filename, method) {
 ##'       "thredds/dodsC/ornldaac/1220", 
 ##'       "/mstmip_driver_global_hd_climate_lwdown_1999_v1.nc4")
 ##' dap <- retry.func(
-##'   ncdf4::nc_open(file_url)
+##'   ncdf4::nc_open(file_url),
 ##'   maxErrors=10,
 ##'   sleep=2)
 ##' }

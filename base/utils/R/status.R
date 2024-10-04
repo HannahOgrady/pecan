@@ -75,9 +75,9 @@ status.check <- function(name, file = NULL) {
     return(0L)
   }
   status_data <- utils::read.table(
-    file, row.names = 1, header = FALSE,
+    file, row.names = NULL, header = FALSE,
     sep = "\t", quote = "", fill = TRUE)
-  if (!name %in% row.names(status_data)) {
+  if (!name %in% status_data[,1]) {
     return(0L)
   }
   status_data[name, ]
