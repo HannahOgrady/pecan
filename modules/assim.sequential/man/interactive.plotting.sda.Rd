@@ -128,7 +128,13 @@ SDA_timeseries_plot(
 
 \item{ANALYSIS}{Analysis object from the sda.output.Rdata.}
 
+\item{aqq, bqq}{shape parameters estimated over time for the process covariance}
+
 \item{plot.title}{character giving the title for post visualization ggplots}
+
+\item{facetg}{logical: Create a subpanel for each variable?}
+
+\item{readsFF}{optional forward forecast}
 
 \item{Add_Map}{Bool variable decide if we want to export the GIS map of Ecoregion.}
 
@@ -146,9 +152,9 @@ SDA_timeseries_plot(
 
 \item{style}{color option.}
 
-\item{PDF_w}{width of exported PDF file.}
+\item{PDF_w}{width of exported PDF file, passed on to `base::pdf()`.}
 
-\item{PDF_h}{height of exported PDF file.}
+\item{PDF_h}{height of exported PDF file, passed on to `base::pdf()`.}
 
 \item{t.inds}{index of period that will be plotted.}
 }

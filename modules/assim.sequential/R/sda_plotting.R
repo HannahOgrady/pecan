@@ -334,6 +334,7 @@ postana.bias.plotting.sda<-function(settings, t, obs.times, obs.mean, obs.cov, o
 }
 
 ##' @rdname interactive.plotting.sda
+#' @param aqq,bqq shape parameters estimated over time for the process covariance
 ##' @export
 postana.bias.plotting.sda.corr<-function(t, obs.times, X, aqq, bqq){
   
@@ -569,6 +570,8 @@ post.analysis.ggplot.violin <- function(settings, t, obs.times, obs.mean, obs.co
 }
 
 ##' @rdname interactive.plotting.sda
+#' @param facetg logical: Create a subpanel for each variable?
+#' @param readsFF optional forward forecast
 ##' @export
 post.analysis.multisite.ggplot <- function(settings, t, obs.times, obs.mean, obs.cov, FORECAST, ANALYSIS, plot.title=NULL, facetg=FALSE, readsFF=NULL, Add_Map=FALSE){
 
@@ -918,8 +921,8 @@ post.analysis.multisite.ggplot <- function(settings, t, obs.times, obs.mean, obs
 ##' @param CI range of confidence interval.
 ##' @param unit list of unit used for y axis label.
 ##' @param style color option.
-##' @param PDF_w width of exported PDF file.
-##' @param PDF_h height of exported PDF file.
+##' @param PDF_w width of exported PDF file, passed on to `base::pdf()`.
+##' @param PDF_h height of exported PDF file, passed on to `base::pdf()`.
 ##' @param t.inds index of period that will be plotted.
 ##' @export
 ##' @author Dongchen Zhang
