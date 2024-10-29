@@ -46,7 +46,7 @@ ALL_PKGS_D := $(BASE_D) $(MODULES_D) $(MODELS_D)
 
 SETROPTIONS := "options(Ncpus = ${NCPUS})"
 
-EXPECTED_ROXYGEN_VERSION := 7.3.1
+EXPECTED_ROXYGEN_VERSION := 7.3.2
 INSTALLED_ROXYGEN_VERSION := $(shell Rscript \
 	-e "if (requireNamespace('roxygen2', quietly = TRUE)) {" \
 	-e   "cat(as.character(packageVersion('roxygen2')))" \
@@ -132,12 +132,6 @@ $(subst .doc/models/template,,$(MODELS_D)): .install/models/template
 ### Order-only dependencies
 # (i.e. prerequisites must exist before building target, but
 # target need not be rebuilt when a prerequisite changes)
-
-.doc/base/all: | $(ALL_PKGS_D)
-.install/base/all: | $(ALL_PKGS_I)
-.check/base/all: | $(ALL_PKGS_C)
-.test/base/all: | $(ALL_PKGS_T)
-
 include Makefile.depends
 
 clean:
