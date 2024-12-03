@@ -88,7 +88,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   guessins  <- readLines(con = system.file("template.ins", package = "PEcAn.LPJGUESS"), n = -1)
   paramsins <- readLines(con = system.file("pecan.ins", package = "PEcAn.LPJGUESS"), n = -1)
-  pftindx   <- 154:224 # should grab automatically
+  pftindx   <- 154:222 # should grab automatically
   pftblock  <- paramsins[pftindx] # lines with pft params
   
   # fill save state flags

@@ -100,7 +100,7 @@ split_inputs.LPJGUESS <- function(settings, start.time, stop.time, inputs, overw
                                 prec = "float")
     
     # create netCD file for LPJ-GUESS
-    ncfile <- ncdf4::nc_create(files.out[[n]], vars = var.def, force_v4 = TRUE)
+    ncfile <- ncdf4::nc_create(files.out[[n]], vars = var.def) #HO: This used to include force_v4=FALSE but that was causing errors. Flagged in case this causes errors downstream. 
     
 
     # put variable, rep(...,each=4) is a hack to write the same data for all grids (which all are the
