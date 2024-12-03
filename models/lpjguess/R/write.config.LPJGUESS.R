@@ -88,7 +88,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   guessins  <- readLines(con = system.file("template.ins", package = "PEcAn.LPJGUESS"), n = -1)
   paramsins <- readLines(con = system.file("pecan.ins", package = "PEcAn.LPJGUESS"), n = -1)
-  pftindx   <- 154:222 # should grab automatically
+  pftindx   <- 152:222 # should grab automatically
   pftblock  <- paramsins[pftindx] # lines with pft params
   
   # fill save state flags
@@ -264,15 +264,15 @@ pecan2lpjguess <- function(trait.values){
     for(i in seq_along(trait.values)){
       if("evergreen" %in% names(trait.values[[i]])){
         # "any" might be unexpected here, grasses can be "any" phenology
-        trait.values[[i]][names(trait.values[[i]]) == "evergreen"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "evergreen"], "evergreen", "any")
+        trait.values[[i]][names(trait.values[[i]]) == "evergreen"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "evergreen"], "'evergreen'", "'any'")
         names(trait.values[[i]])[names(trait.values[[i]]) == "evergreen"] <- "phenology"
       }
       if("cold_deciduous" %in% names(trait.values[[i]])){
-        trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"], "summergreen", "raingreen")
+        trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"], "'summergreen'", "'raingreen'")
         names(trait.values[[i]])[names(trait.values[[i]]) == "cold_deciduous"] <- "phenology"
       }
       if("broad_leaved" %in% names(trait.values[[i]])){
-        trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"], "broadleaf", "needleleaf")
+        trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"], "'broadleaf'", "'needleleaf'")
         names(trait.values[[i]])[names(trait.values[[i]]) == "broad_leaved"] <- "leafphysiognomy"
       }
     }

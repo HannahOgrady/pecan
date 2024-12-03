@@ -353,7 +353,7 @@ sda.enkf.multisite <- function(settings,
         load(file.path(settings$outdir, "samples.Rdata"))
       }
       #reformatting params
-      new.params <- sda_matchparam(settings, ensemble.samples, site.ids, nens)
+      new.params <- sda_matchparam(conf.settings, ensemble.samples, site.ids, nens)
     }
       #sample met ensemble members
       #TODO: incorporate Phyllis's restart work
