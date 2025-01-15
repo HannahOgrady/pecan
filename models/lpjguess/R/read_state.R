@@ -432,8 +432,8 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
   paramh_in <- readLines(con = paramh_name)
   
   ### these are the values read from params.ins, passed to this fcn
-  #paramsins <- readLines(file.path(rundir, "params.ins"), n = -1) # This probably should work but I am goign to hard code it to bypass this step right now. 
-  paramsins <- readLines("/home/carya/workflows/pecan_test/run/99000000472/params.ins")
+  paramsins <- readLines(file.path(rundir, "params.ins"), n = -1) # This probably should work but I am goign to hard code it to bypass this step right now. 
+  #paramsins <- readLines("/home/carya/workflows/pecan_test/run/99000000518/params.ins")
   npatches  <- as.numeric(gsub(".*([0-9]+).*$", "\\1", paramsins[grepl("npatch", paramsins, fixed = TRUE)]))
   
   
