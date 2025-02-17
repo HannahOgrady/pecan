@@ -1,5 +1,6 @@
 ## split LPJ-GUESS ncdf files into smaller time units to use in KF
 ##' @author Istem Fer
+
 ##' @name split_inputs.LPJGUESS
 ##' @title Split inputs for LPJ-GUESS model
 ##' @param settings PEcAn settings object
@@ -104,7 +105,6 @@ split_inputs.LPJGUESS <- function(settings, start.time, stop.time, inputs, overw
     # create netCD file for LPJ-GUESS
     ncfile <- ncdf4::nc_create(files.out[[n]], vars = var.def, force_v4 = TRUE)
     
-
     # put variable, rep(...,each=4) is a hack to write the same data for all grids (which all are the
     # same)
     ncdf4::ncvar_put(ncfile, var.def, rep(var.list[[n]], each = 4))

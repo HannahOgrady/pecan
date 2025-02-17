@@ -1,4 +1,3 @@
-
 ##' Adjust LPJ-GUESS individual's density
 ##' 
 ##' Very simple function that just scales the density of individuals and the associated C and N pools 

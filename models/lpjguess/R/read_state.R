@@ -13,6 +13,7 @@ find_stream_var <- function(file_in, line_nos){
   
   streaming_list <- list()
   str.i <- 1
+
   when_here <- NULL
   not_skipping <- TRUE
   
@@ -20,6 +21,7 @@ find_stream_var <- function(file_in, line_nos){
   repeat{
     i <- i + 1
     if(!is.null(when_here)){
+
       if(i == when_here){
         i <- skip_to
         when_here <- NULL
@@ -47,12 +49,15 @@ find_stream_var <- function(file_in, line_nos){
             when_here <- NULL
           }
         }
+
         check1 <- !grepl(".*& ", file_in[i]) # when there are no subsequent stream
         check2 <- !grepl(".*& ", file_in[i+1]) # sometimes following line is empty or commented, check the next one too
         if(check1 & !check2) i <- i+1
         if(check1 &  check2) break # looks like there are no subsequent stream
         this_line <- gsub("[[:space:]]", "", strsplit(file_in[i], "& ")[[1]])
+
         for(var in this_line){
+
           if(var != ""){
             if(var != "arch"){
               streaming_list[[str.i]] <- var
@@ -104,6 +109,7 @@ serialize_starts_ends <- function(file_in, pattern = "void Gridcell::serialize")
   
   return(c(starting_line, ending_line))
 } # serialize_starts_ends
+
 
 
 #' Find Closing Bracket
@@ -652,7 +658,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
     
     # "(*this)[*]" points to different things under different levels, here it is stand
     if(grepl(utils::glob2rx("(*this)[*]"), current_stream)){ # note that first else-part will be evaluated considering the order in guess.cpp
-      
+
       # STAND
       level <- "Stand"
       current_stream <- "Stand"
@@ -671,8 +677,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
         for(svs_i in seq_along(streamed_vars_stand)){ # looping over the streamed stand vars
           
           current_stream <- streamed_vars_stand[svs_i]
-          if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard
-          
+          if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard      
           if(current_stream == "nobj" & level == "Stand"){
             # nobj points to different things under different levels, here it is the number of patches
             # number of patches is set through insfiles, read by write.configs and passed to this fcn
@@ -688,6 +693,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
           }
           
           # "(*this)[*]" points to different things under different levels, here it is patch
+
           if(grepl(utils::glob2rx("(*this)[*]"), current_stream)){ 
             # PATCH
             level <- "Patch"
@@ -705,8 +711,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
             for(ptch_i in seq_len(npatches)){ #looping over the patches
               for(svp_i in seq_along(streamed_vars_patch)){ #looping over the streamed patch vars
                 current_stream <- streamed_vars_patch[svp_i]
-                if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard
-                
+                if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard                
                 if(tools::toTitleCase(current_stream) %in% LPJ_GUESS_CLASSES){
                   current_stream_type <- find_stream_type(NULL, current_stream, LPJ_GUESS_CLASSES, LPJ_GUESS_TYPES, guessh_in)
                 }else{
