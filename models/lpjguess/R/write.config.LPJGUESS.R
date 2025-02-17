@@ -9,6 +9,7 @@
 ##' @param trait.values vector of samples for a given trait
 ##' @param settings list of settings from pecan settings file
 ##' @param run.id id of run
+##' @param restart Logical, whether to restart the simulation.
 ##' @return configuration file for LPJ-GUESS for given run
 ##' @export
 ##' @author Istem Fer, Tony Gardella
@@ -82,13 +83,14 @@ write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id, rest
 #' @param rundir rundir
 #' @param outdir outdir
 #' @param run.id PEcAn run ID
+#' @param restart Logical, whether to restart the simulation.
 #' @return settings Updated list
 #' @author Istem Fer
 write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.id, restart = NULL) {
   
   guessins  <- readLines(con = system.file("template.ins", package = "PEcAn.LPJGUESS"), n = -1)
   paramsins <- readLines(con = system.file("pecan.ins", package = "PEcAn.LPJGUESS"), n = -1)
-  pftindx   <- 152:222 # should grab automatically
+  pftindx   <- 154:224 # should grab automatically
   pftblock  <- paramsins[pftindx] # lines with pft params
   
   # fill save state flags
@@ -128,8 +130,8 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   guessins  <- gsub("@GRID_FILE@", grid.file, guessins)
   
   pft_names <- sapply(settings$pfts, `[[`,"name")
-  load(system.file("lpjguess_params.Rdata",package = "PEcAn.LPJGUESS"))
-  
+  lpjguess_param_data <- PEcAn.utils::load_local(system.file("lpjguess_params.Rdata",package = "PEcAn.LPJGUESS"))
+  lpjguess_param_list <- lpjguess_param_data$lpjguess_param_list
   # name and unit conversion
   trait.values <- pecan2lpjguess(trait.values)
   
@@ -214,7 +216,9 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   if (end.year < 1850) {
     CO2 <- data.frame(start.year:end.year, rep(280, n.year))
   } else if (end.year < 2021) {
-    data(co2.1850.2020, package = "PEcAn.LPJGUESS")
+    co2_data <- new.env()
+    utils::data(co2.1850.2020, package = "PEcAn.LPJGUESS", envir = co2_data)
+    co2.1850.2020 <- co2_data$co2.1850.2020
     if (start.year < 1850) {
       CO2_preind <- data.frame(year = start.year:1849, ppm = rep(280, length(start.year:1849)))
       CO2_postind <- co2.1850.2020[1:which(co2.1850.2020[, 1] == end.year), ]
@@ -225,7 +229,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   } else {
     PEcAn.logger::logger.severe("End year should be < 2021 for CO2")
   }
-  write.table(CO2, file = co2.file, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
+  utils::write.table(CO2, file = co2.file, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
   guessins <- gsub("@CO2_FILE@", co2.file, guessins)
   
   # write soil file path
@@ -264,15 +268,15 @@ pecan2lpjguess <- function(trait.values){
     for(i in seq_along(trait.values)){
       if("evergreen" %in% names(trait.values[[i]])){
         # "any" might be unexpected here, grasses can be "any" phenology
-        trait.values[[i]][names(trait.values[[i]]) == "evergreen"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "evergreen"], "'evergreen'", "'any'")
+        trait.values[[i]][names(trait.values[[i]]) == "evergreen"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "evergreen"], "evergreen", "any")
         names(trait.values[[i]])[names(trait.values[[i]]) == "evergreen"] <- "phenology"
       }
       if("cold_deciduous" %in% names(trait.values[[i]])){
-        trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"], "'summergreen'", "'raingreen'")
+        trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "cold_deciduous"], "summergreen", "raingreen")
         names(trait.values[[i]])[names(trait.values[[i]]) == "cold_deciduous"] <- "phenology"
       }
       if("broad_leaved" %in% names(trait.values[[i]])){
-        trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"], "'broadleaf'", "'needleleaf'")
+        trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"] <- ifelse(trait.values[[i]][names(trait.values[[i]]) == "broad_leaved"], "broadleaf", "needleleaf")
         names(trait.values[[i]])[names(trait.values[[i]]) == "broad_leaved"] <- "leafphysiognomy"
       }
     }

@@ -1,6 +1,8 @@
 ## split LPJ-GUESS ncdf files into smaller time units to use in KF
 ##' @author Istem Fer
-##' 
+
+##' @name split_inputs.LPJGUESS
+##' @title Split inputs for LPJ-GUESS model
 ##' @param settings PEcAn settings object
 ##' @param start.time start date and time for each SDA ensemble
 ##' @param stop.time stop date and time for each SDA ensemble
@@ -10,6 +12,7 @@
 ##' @description Splits climate met for LPJGUESS
 ##' 
 ##' @return name of the split met file
+##' @importFrom PEcAn.utils days_in_year
 ##' @export
 split_inputs.LPJGUESS <- function(settings, start.time, stop.time, inputs, overwrite = FALSE, outpath = NULL){
   
@@ -58,7 +61,7 @@ split_inputs.LPJGUESS <- function(settings, start.time, stop.time, inputs, overw
   # cut where
   if(start.year == run.start){
     years <- start.year:end.year
-    inds  <- 1:sum(days_in_year(years))
+    inds  <- 1:sum(PEcAn.utils::days_in_year(years))
   }else{
     ### come back
   }
@@ -100,9 +103,8 @@ split_inputs.LPJGUESS <- function(settings, start.time, stop.time, inputs, overw
                                 prec = "float")
     
     # create netCD file for LPJ-GUESS
-    ncfile <- ncdf4::nc_create(files.out[[n]], vars = var.def) #HO: This used to include force_v4=FALSE but that was causing errors. Flagged in case this causes errors downstream. 
+    ncfile <- ncdf4::nc_create(files.out[[n]], vars = var.def, force_v4 = TRUE)
     
-
     # put variable, rep(...,each=4) is a hack to write the same data for all grids (which all are the
     # same)
     ncdf4::ncvar_put(ncfile, var.def, rep(var.list[[n]], each = 4))

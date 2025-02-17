@@ -1,17 +1,8 @@
-#-------------------------------------------------------------------------------
-# Copyright (c) 2012 University of Illinois, NCSA.
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the 
-# University of Illinois/NCSA Open Source License
-# which accompanies this distribution, and is available at
-# http://opensource.ncsa.illinois.edu/license.html
-#-------------------------------------------------------------------------------
-
 ##' Adjust LPJ-GUESS state
 ##'
 ##' @title updateState.LPJGUESS
 ##'
-##' @description 
+##' @description Adjust LPJ-GUESS state variables based on input parameters.
 ##'
 ##'
 ##' @param model.state A large multiply-nested list containing the entire LPJ-GUESS state as read by 
@@ -25,16 +16,14 @@
 ##' @param cmass.target A numeric vector of the target stand-level biomasses (kgC/m^2) as named numeric vector 
 ##' with one entry per PFT/species, with the names being the PFT/species codes.  These values should be produced
 ##' using state data assimilation from function XXXXXX 
-##' @param cmass.target A numeric vector of the target stand-level biomasses (kgC/m^2) as named numeric vector 
-##' with one entry per PFT/species, with the names being the PFT/species codes.  These values should be produced
-##' using state data assimilation from function XXXXXX 
 ##' @param HEIGHT_MAX Maximum allowed height of an individual.  This is the maximum height that a tree
 ##' can have.  This is hard-coded in LPJ-GUESS to 150 m, but for SDA that might be unrealistically big, 
 ##' so this argument allows adjustment. 
+##' @param cmass.initial Initial carbon mass (kgC/m^2).
 ##' @return  And updated model state (as a big old list o' lists)
-##' @export update.state.LPJGUESS 
+##' @export update_state_LPJGUESS 
 ##' @author Matthew Forrest
-update.state.LPJGUESS <- function(model.state, dens.initial, dens.target, cmass.initial, cmass.target, HEIGHT_MAX = 150) {
+update_state_LPJGUESS <- function(model.state, dens.initial, dens.target, cmass.initial, cmass.target, HEIGHT_MAX = 150) {
   
   
   # calculate relative increases to be applied later on (per PFT)

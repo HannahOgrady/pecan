@@ -1,19 +1,27 @@
 
 ######################## Helper functions ########################
 
-
-# helper function that lists streamed variables, it just returns the names, types are checked by other function
+#' Find Stream Variable
+#'
+#' A helper function that lists streamed variables. It returns the names of streamed variables.
+#'
+#' @param file_in A character vector representing the file content to search through.
+#' @param line_nos A numeric vector of length 2, specifying the start and end lines to search for streamed variables.
+#' @return A character vector of streamed variable names.
+# helper function that lists streamed variables, it just returns the names, types are checked by other fucntion
 find_stream_var <- function(file_in, line_nos){
   
   streaming_list <- list()
   str.i <- 1
-  when_here <- NULL # This will be used to skip the reading functions for a stream if they exist. 
-  not_skipping <- TRUE # HO: I do not know what this is for, it is never mentioned again. 
+
+  when_here <- NULL
+  not_skipping <- TRUE
   
   i <- line_nos[1]
-  repeat{ #This loops over all of the line numbers
+  repeat{
     i <- i + 1
-    if(!is.null(when_here)){# Skips over reading functions in stream definitions
+    if(!is.null(when_here)){
+
       if(i == when_here){
         i <- skip_to
         when_here <- NULL
@@ -41,13 +49,15 @@ find_stream_var <- function(file_in, line_nos){
             when_here <- NULL
           }
         }
-        # These checks will see if you have come to the end of the variables in the stream
+
         check1 <- !grepl(".*& ", file_in[i]) # when there are no subsequent stream
         check2 <- !grepl(".*& ", file_in[i+1]) # sometimes following line is empty or commented, check the next one too
         if(check1 & !check2) i <- i+1
         if(check1 &  check2) break # looks like there are no subsequent stream
         this_line <- gsub("[[:space:]]", "", strsplit(file_in[i], "& ")[[1]])
-        for(var in this_line){ # Collects all the variable names in that line.
+
+        for(var in this_line){
+
           if(var != ""){
             if(var != "arch"){
               streaming_list[[str.i]] <- var
@@ -68,13 +78,18 @@ find_stream_var <- function(file_in, line_nos){
   
   #unlist and nix the ;
   returnin_stream <- gsub(";", "", unlist(streaming_list), fixed = TRUE)
-  # Strip additional whitespace from strings
-  returnin_stream <- trimws(returnin_stream)
   return(returnin_stream)
 } # find_stream_var
 
 
-
+#' Serialize Starts and Ends
+#'
+#' Finds the start and end lines for serialization.
+#'
+#' @param file_in A character vector of file lines to search through.
+#' @param pattern A character string pattern to look for in the file.
+#' @return A numeric vector of length 2, giving the start and end line numbers.
+#' @importFrom stringr str_match
 # helper function that scans LPJ-GUESS that returns the beginning and the ending lines of serialized object
 serialize_starts_ends <- function(file_in, pattern = "void Gridcell::serialize"){
   # find the starting line from the given pattern
@@ -96,6 +111,17 @@ serialize_starts_ends <- function(file_in, pattern = "void Gridcell::serialize")
 } # serialize_starts_ends
 
 
+
+#' Find Closing Bracket
+#'
+#' Identifies the line number of the matching closing bracket for a given opening bracket.
+#'
+#' @param find A character string of the opening bracket.
+#' @param line_no A numeric value indicating the line number to start the search.
+#' @param file_in A character vector of the file content.
+#' @param if_else_check Optional. A logical value indicating whether to check for if/else blocks (default is FALSE).
+#' @export
+#' @return A numeric value indicating the line number of the matching closing bracket.
 # helper function that finds the closing bracket, can work over if-else
 find_closing <- function(find = "}", line_no, file_in, if_else_check = FALSE){
   opened <- 1
@@ -104,7 +130,7 @@ find_closing <- function(find = "}", line_no, file_in, if_else_check = FALSE){
     start_char <- "{"
     end_char   <- "}"
   }else{
-    #there can be else-ifs, find closing paranthesis / square breacket etc
+    stop("Unsupported bracket type: ", find)
   }
   
   # check the immediate line and return if closed there already
@@ -128,7 +154,17 @@ find_closing <- function(find = "}", line_no, file_in, if_else_check = FALSE){
   return(line_no)
 } # find_closing
 
-
+#' Find Stream Size
+#'
+#' Determines the size (number of variables) in a stream based on the file content.
+#'
+#' @param current_stream_type A list containing details of the current stream.
+#' @param guessh_in A character vector of LPJ-GUESS header file content.
+#' @param LPJ_GUESS_TYPES A character vector of recognized LPJ-GUESS types.
+#' @param LPJ_GUESS_CONST_INTS A dataframe mapping LPJ-GUESS constants to their values.
+#' @return A numeric value representing the size (number of streamed variables).
+#' @importFrom stringr str_match
+#' @importFrom utils glob2rx
 # helper function that determines the stream size to read
 find_stream_size <- function(current_stream_type, guessh_in, LPJ_GUESS_TYPES, LPJ_GUESS_CONST_INTS){
   
@@ -231,7 +267,7 @@ find_stream_size <- function(current_stream_type, guessh_in, LPJ_GUESS_TYPES, LP
     specs$size <- 8
     specs$single <- TRUE
     
-  }else if(grepl(glob2rx(paste0(current_stream_type$type, "*", current_stream_type$name, ";")), sub_string)){
+  }else if(grepl(utils::glob2rx(paste0(current_stream_type$type, "*", current_stream_type$name, ";")), sub_string)){
     
     # this is only length 1
     specs$n <- 1
@@ -272,7 +308,26 @@ find_stream_size <- function(current_stream_type, guessh_in, LPJ_GUESS_TYPES, LP
   return(specs)
 } # find_stream_size
 
+#' Read State File
+#'
+#' Reads a state file and processes its contents for further use.
+#'
+#' @param file_path A character string specifying the path to the state file.
+#' @return A list containing the processed state information.
+read_state <- function(file_path) {
+  # Function body
+}
 
+#' Find Stream Type
+#'
+#' Determines the type of a given stream variable in an LPJ-GUESS file.
+#'
+#' @param class A character string representing the class of the stream variable (default is NULL).
+#' @param current_stream_var A character string representing the current stream variable.
+#' @param LPJ_GUESS_CLASSES A character vector of LPJ-GUESS class names.
+#' @param LPJ_GUESS_TYPES A character vector of recognized LPJ-GUESS types.
+#' @param guessh_in A character vector of LPJ-GUESS header file content.
+#' @return A character string indicating the stream type.
 # helper function to decide the type of the stream
 # this function relies on the architecture of LPJ-GUESS and has bunch of harcoded checks, see model documentation
 find_stream_type <- function(class = NULL, current_stream_var, LPJ_GUESS_CLASSES, LPJ_GUESS_TYPES, guessh_in){
@@ -383,7 +438,6 @@ find_stream_type <- function(class = NULL, current_stream_var, LPJ_GUESS_CLASSES
 
 ###################################### READ STATE
 
-library(stringr)
 
 # this fcn is for potential natural vegetation only
 # when there is landcover, there will be more stand types
@@ -408,32 +462,32 @@ library(stringr)
 #outdir <- "/fs/data2/output/PEcAn_1000010473/out/1002656304"
 
 # outdir, at least model version, maybe also settings
+#' Read Binary File for LPJ-GUESS
+#'
+#' Reads a binary file formatted for LPJ-GUESS and extracts relevant data.
+#'
+#' @param outdir A character string specifying the output directory containing the binary state files.
+#' @param version A character string specifying the LPJ-GUESS version (default is "PalEON").
+#' @importFrom stringr str_match
+#' @importFrom utils glob2rx
+#' @return A matrix or list containing the extracted data.
 read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
   
   # find rundir too, params.ins is in there and we need to get some values from there
   rundir <- file.path(dirname(dirname(outdir)), "run", basename(outdir))
   
   # guess.cpp has the info of what is being written
-  #guesscpp_name <- paste0("guess.", version, ".cpp")  # these are gonna be in the package guess.VERSION.cpp
-  guesscpp_name <- "/home/carya/guess_3.0/framework/guess.cpp" #As far as I can tell this package does not exist so we need a new way to do this. 
-  #guesscpp_in   <- readLines(con = system.file(guesscpp_name, package = "PEcAn.LPJGUESS"), n = -1)
-  guesscpp_in <- readLines(con = guesscpp_name)
-  
+  guesscpp_name <- paste0("guess.", version, ".cpp")  # these are gonna be in the package guess.VERSION.cpp
+  guesscpp_in   <- readLines(con = system.file(guesscpp_name, package = "PEcAn.LPJGUESS"), n = -1)
   # guess.h has the types so that we know what streamsize to read
-  #guessh_name <- paste0("guess.", version, ".h") 
-  guessh_name <- "/home/carya/guess_3.0/framework/guess.h"
-  #guessh_in   <- readLines(con = system.file(guessh_name, package = "PEcAn.LPJGUESS"), n = -1)
-  guessh_in <- readLines(con = guessh_name)
-  
+  guessh_name <- paste0("guess.", version, ".h") 
+  guessh_in   <- readLines(con = system.file(guessh_name, package = "PEcAn.LPJGUESS"), n = -1)
   # parameters.h has some more types
-  # paramh_name <- paste0("parameters.", version, ".h") 
-  paramh_name <- "/home/carya/guess_3.0/framework/parameters.h"
-  # paramh_in   <- readLines(con = system.file(paramh_name, package = "PEcAn.LPJGUESS"), n = -1)
-  paramh_in <- readLines(con = paramh_name)
+  paramh_name <- paste0("parameters.", version, ".h") 
+  paramh_in   <- readLines(con = system.file(paramh_name, package = "PEcAn.LPJGUESS"), n = -1)
   
   ### these are the values read from params.ins, passed to this fcn
-  paramsins <- readLines(file.path(rundir, "params.ins"), n = -1) # This probably should work but I am goign to hard code it to bypass this step right now. 
-  #paramsins <- readLines("/home/carya/workflows/pecan_test/run/99000000518/params.ins")
+  paramsins <- readLines(file.path(rundir, "params.ins"), n = -1)
   npatches  <- as.numeric(gsub(".*([0-9]+).*$", "\\1", paramsins[grepl("npatch", paramsins, fixed = TRUE)]))
   
   
@@ -479,7 +533,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
   # NOTE THAT THESE PATTERNS ASSUME SOME CODING STYLE, thanks to LPJ-GUESS developers this might not be an issue in the future 
   for(i in seq_along(guesscpp_in)){
     # search for "class XXX : public Serializable {"
-    res <- stringr::str_match(guesscpp_in[i], "void (.*?)::serialize\\(ArchiveStream\\& arch\\)") #HO: There is probably a way to do this without the dependency.
+    res <- stringr::str_match(guesscpp_in[i], "void (.*?)::serialize\\(ArchiveStream\\& arch\\)")
     if(!is.na(res[,2]) && !(res[,2] %in% c("cropindiv_struct", "cropphen_struct"))){ # no crops for now
       lpjguess_classes[[ctr]] <- res[,2]
       ctr <- ctr + 1  
@@ -487,7 +541,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
   }
   
   # all match?
-  if(!setequal(unlist(lpjguess_classes), LPJ_GUESS_CLASSES)){#HO: I do not know what gridcellst is. Landcover is only in some runs, Don't know what MassBalance is. Add options for subset of full classes. 
+  if(!setequal(unlist(lpjguess_classes), LPJ_GUESS_CLASSES)){
     PEcAn.logger::logger.severe("This function can only read the following class objects: ", paste(LPJ_GUESS_CLASSES, collapse="--"))
   }
   
@@ -585,8 +639,8 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
     # weird, it doesn't go into Gridcell st
     if(current_stream == "st[i]")   next #current_stream <- "Gridcellst" 
     if(current_stream == "balance") current_stream <- "MassBalance" #not sure how to make this name matching otherwise
-    if(grepl(glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard
-    if(grepl(glob2rx("(*this)[*].landcover"), current_stream)){ # s counter might change, using wildcard
+    if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard
+    if(grepl(utils::glob2rx("(*this)[*].landcover"), current_stream)){ # s counter might change, using wildcard
       # not sure how to handle this better. If we see this, it means we are now looping over Stands
       # this function considers "NATURAL" vegetation only, so there is only one stand
       # this is an integer that tells us which landcover type this stand is
@@ -603,8 +657,8 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
     } 
     
     # "(*this)[*]" points to different things under different levels, here it is stand
-    if(grepl(glob2rx("(*this)[*]"), current_stream)){ # note that first else-part will be evaluated considering the order in guess.cpp
-      
+    if(grepl(utils::glob2rx("(*this)[*]"), current_stream)){ # note that first else-part will be evaluated considering the order in guess.cpp
+
       # STAND
       level <- "Stand"
       current_stream <- "Stand"
@@ -623,8 +677,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
         for(svs_i in seq_along(streamed_vars_stand)){ # looping over the streamed stand vars
           
           current_stream <- streamed_vars_stand[svs_i]
-          if(grepl(glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard
-          
+          if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard      
           if(current_stream == "nobj" & level == "Stand"){
             # nobj points to different things under different levels, here it is the number of patches
             # number of patches is set through insfiles, read by write.configs and passed to this fcn
@@ -640,7 +693,8 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
           }
           
           # "(*this)[*]" points to different things under different levels, here it is patch
-          if(grepl(glob2rx("(*this)[*]"), current_stream)){ 
+
+          if(grepl(utils::glob2rx("(*this)[*]"), current_stream)){ 
             # PATCH
             level <- "Patch"
             current_stream <- "Patch"
@@ -657,8 +711,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
             for(ptch_i in seq_len(npatches)){ #looping over the patches
               for(svp_i in seq_along(streamed_vars_patch)){ #looping over the streamed patch vars
                 current_stream <- streamed_vars_patch[svp_i]
-                if(grepl(glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard
-                
+                if(grepl(utils::glob2rx("pft[*]"), current_stream)) current_stream <- paste0(level, "pft") # i counter might change, using wildcard                
                 if(tools::toTitleCase(current_stream) %in% LPJ_GUESS_CLASSES){
                   current_stream_type <- find_stream_type(NULL, current_stream, LPJ_GUESS_CLASSES, LPJ_GUESS_TYPES, guessh_in)
                 }else{
@@ -1048,7 +1101,7 @@ read_binary_LPJGUESS <- function(outdir, version = "PalEON"){
                                                                                            what = current_stream_specs$what, 
                                                                                            n    = current_stream_specs$n, 
                                                                                            size = current_stream_specs$size)
-            }else if(current_stream_specs$names %in% c("hmtemp_20", "hmprec_20", "hmeet_20")){
+            }else if(current_stream_specs$name %in% c("hmtemp_20", "hmprec_20", "hmeet_20")){
               # these three are just too different, maybe extract their names in the beginning
               # be careful while writing back to the binary
               # Gridcell[[length(Gridcell)]][[current_stream_type$name]] <- readBin(con = zz, double(), 264, 8)
