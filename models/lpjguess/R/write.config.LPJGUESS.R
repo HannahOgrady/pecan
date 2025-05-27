@@ -16,15 +16,15 @@
 write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id, restart = NULL) {
   
   # find out where to write run/ouput
-  rundir <- file.path(settings$host$rundir, run.id)
+  rundir <- file.path(settings$rundir, run.id)
   if (!file.exists(rundir)) {
     dir.create(rundir)
   }
-  outdir <- file.path(settings$host$outdir, run.id)
+  outdir <- file.path(settings$outdir, "out", run.id)
   if (!file.exists(outdir)) {
     dir.create(outdir)
   }
-  
+
   #-----------------------------------------------------------------------
   # write LPJ-GUESS specific instruction file
   settings <- write.insfile.LPJGUESS(settings, trait.values, rundir, outdir, run.id, restart)
@@ -37,7 +37,7 @@ write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id, rest
     jobsh <- readLines(con = system.file("template.job", package = "PEcAn.LPJGUESS"), n = -1)
   }
   
-  # create host specific setttings
+  # create host specific settings
   hostsetup <- ""
   if (!is.null(settings$model$prerun)) {
     hostsetup <- paste(hostsetup, sep = "\n", paste(settings$model$prerun, collapse = "\n"))
@@ -64,8 +64,16 @@ write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id, rest
   jobsh <- gsub("@START_DATE@", settings$run$start.date, jobsh)
   jobsh <- gsub("@END_DATE@", settings$run$end.date, jobsh)
   
-  jobsh <- gsub("@OUTDIR@", outdir, jobsh)
-  jobsh <- gsub("@RUNDIR@", rundir, jobsh)
+  if(is.localhost(settings$host)){
+    jobsh <- gsub("@OUTDIR@", outdir, jobsh)
+    jobsh <- gsub("@RUNDIR@", rundir, jobsh)
+  } else {
+    host_outdir <- paste(settings$host$outdir, run.id, sep = "/")
+    host_rundir <- paste(settings$host$rundir, run.id, sep = "/")
+    jobsh <- gsub('@OUTDIR@', host_outdir, jobsh)
+    jobsh <- gsub('@RUNDIR@', host_rundir, jobsh)
+    }
+ 
   
   jobsh <- gsub("@BINARY@", settings$model$binary, jobsh)
   jobsh <- gsub("@INSFILE@", settings$model$insfile, jobsh)
@@ -125,9 +133,15 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   # cp the grid indices file
   grid.file <- file.path(settings$host$rundir, "gridind.txt")
+
   gridind   <- readLines(con = system.file("gridind.txt", package = "PEcAn.LPJGUESS"), n = -1)
   writeLines(gridind, grid.file)
-  guessins  <- gsub("@GRID_FILE@", grid.file, guessins)
+  if(is.localhost(settings$host)){
+    guessins <- gsub("@GRID_FILE@", grid.file, guessins)
+  }else{
+    guessins  <- gsub("@GRID_FILE@", grid.file.host, guessins)
+  }
+  
   
   pft_names <- sapply(settings$pfts, `[[`,"name")
   lpjguess_param_data <- PEcAn.utils::load_local(system.file("lpjguess_params.Rdata",package = "PEcAn.LPJGUESS"))
@@ -179,8 +193,12 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
       # handle the no prior params
       for(t in seq_along(noprior_params)){
         trait_name <- noprior_params[t]
-        if(!is.null(settings$pfts[[i]][[trait_name]])){ # specified in xml
-          write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), paste0("'", settings$pfts[[i]][[trait_name]], "'"), write2pftblock[[i]])
+        if(!is.null(settings$pfts[[i]][[trait_name]])){ # specified in xml and isn't rootdist
+          if(trait_name == "rootdist"){#Rootdist should not come with quotes. It is expected to be numerical
+            write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), settings$pfts[[i]][[trait_name]], write2pftblock[[i]])
+          }else{
+            write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), paste0("'", settings$pfts[[i]][[trait_name]], "'"), write2pftblock[[i]])
+          }
         }else{ #pass the default, add to warning
           write2pftblock[[i]] <- gsub(paste0("@", trait_name, "@"), paste0("'", lpjguess_param_list[[trait_name]], "'"), write2pftblock[[i]])
           warning_list[[trait_name]] <- trait_name
@@ -197,7 +215,7 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   
   # write clim file names
   
-  tmp.file <- settings$run$inputs$met$path
+  tmp.file <- settings$run$inputs$met$path #Only works if you passed in a path for met inputs. Does not work if you use auto-gen met inputs. 
   pre.file <- gsub(".tmp.nc", ".pre.nc", tmp.file)
   cld.file <- gsub(".tmp.nc", ".cld.nc", tmp.file)
   
@@ -209,6 +227,10 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   start.year <- lubridate::year(settings$run$start.date)
   end.year <- lubridate::year(settings$run$end.date)
   n.year <- length(start.year:end.year)
+  if(!is.localhost(settings$host)){
+    co2.file.host <- file.path(settings$host$rundir, 
+                          paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
+  }
   co2.file <- file.path(settings$rundir, 
                         paste0("co2.", sprintf("%04d", start.year), ".", end.year, ".txt"))
   
@@ -229,14 +251,20 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   } else {
     PEcAn.logger::logger.severe("End year should be < 2021 for CO2")
   }
+
   utils::write.table(CO2, file = co2.file, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
   guessins <- gsub("@CO2_FILE@", co2.file, guessins)
+
   
   # write soil file path
   soil.file <- settings$run$inputs$soil$path
   guessins <- gsub("@SOIL_FILE@", soil.file, guessins)
   
-  settings$model$insfile <- file.path(settings$rundir, run.id, "guess.ins")
+  if(is.localhost(settings$host)){
+    settings$model$insfile <- file.path(settings$rundir, run.id, "guess.ins")
+  }else{
+    settings$model$insfile <- file.path(settings$host$rundir, run.id, "guess.ins")
+  }
   
   # version check
   if(!is.null(settings$model$revision)){
@@ -293,7 +321,7 @@ pecan2lpjguess <- function(trait.values){
     "ci2ca", "lambda_max", NA, NA,         
     "Emax", "emax", NA, NA,
     "reprfrac", "reprfrac", NA, NA,
-    "water_stress_threshold", "wscal_min", NA, NA,
+    "water_stress_threshold", "wscal_min", NA, NA,#No units specified anywhere. Assuming the same.
     "drought_tolerance", "drought_tolerance", NA, NA,
     "turnover_harv_prod", "turnover_harv_prod", NA, NA, 
     "crownarea_max", "crownarea_max", NA, NA,
@@ -302,7 +330,7 @@ pecan2lpjguess <- function(trait.values){
     "k_allom2", "k_allom2", NA, NA,           
     "k_allom3", "k_allom3", NA, NA,          
     "k_rp", "k_rp", NA, NA,               
-    "wood_density", "wooddens", NA, NA,           
+    "wooddens", "wooddens", NA, NA,           
     "c2n_fineroot", "cton_root", NA, NA,
     "c2n_sapwood", "cton_sap", NA, NA,           
     "nup2root_max", "nuptoroot", NA, NA,
@@ -356,18 +384,21 @@ pecan2lpjguess <- function(trait.values){
   })
   
   # TODO : unit conversions?
-  toconvert <- vartable$lpjguessname[!is.na(vartable$lpjguessunits)]
-  trait.values <- lapply(trait.values, function(x){
-    canconvert <- toconvert[toconvert %in% names(x)]      
-    if(length(canconvert) != 0){
-      for(c in seq_along(canconvert)){
-        x[,names(x) == canconvert[c]] <- PEcAn.utils::ud_convert(x[,names(x) == canconvert[c]], 
-                                                              vartable$pecanunits[vartable$lpjguessname == canconvert[c]], 
-                                                              vartable$lpjguessunits[vartable$lpjguessname == canconvert[c]])
-      }
-    }
-    return(x)
-  })
+  # toconvert <- vartable$lpjguessname[!is.na(vartable$lpjguessunits)]
+  # trait.values <- lapply(trait.values, function(x){
+  #   for(i in 1:length(x)){ #loop over list of PFTs
+  #     canconvert <- toconvert[toconvert %in% names(x[[i]])]  
+  #     if(length(canconvert) != 0){
+  #       for(c in seq_along(canconvert)){
+  #         x[,names(x) == canconvert[c]] <- PEcAn.utils::ud_convert(x[,names(x) == canconvert[c]], 
+  #                                                                  vartable$pecanunits[vartable$lpjguessname == canconvert[c]], 
+  #                                                                  vartable$lpjguessunits[vartable$lpjguessname == canconvert[c]])
+  #       }
+  #     }
+  #   }#End loop over PFTs
+  #   return(x)
+  # })
   
   return(trait.values)
 } 
+
