@@ -51,91 +51,40 @@ extract_soil_gssurgo <- function(outdir, lat, lon, size=1, grid_size=3, grid_spa
   ymin <- coords_proj[2] - half_extent
   ymax <- coords_proj[2] + half_extent
   
-  # Create raster template
-  raster_template <- terra::rast(
-    xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,
-    resolution = grid_spacing, crs = proj_crs$wkt
+  # I ask the gSSURGO to find all the mukeys (loosely can be thought of soil type) within 500m of my site location. 
+  # Basically I think of this as me going around and taking soil samples within 500m of my site.
+  #https://sdmdataaccess.nrcs.usda.gov/SpatialFilterHelp.htm
+  mu.Path <- paste0(
+    "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs?",
+    "SERVICE=WFS",
+    "&VERSION=1.1.0",
+    "&REQUEST=GetFeature&TYPENAME=MapunitPoly",
+    "&OUTPUTFORMAT=XMLMukeyList",
+    "MAXFEATURES=10000",
+    "&FILTER=",
+      "<Filter>",
+        "<DWithin>",
+          "<PropertyName>Geometry</PropertyName>",
+          "<gml:Point>",
+            "<gml:coordinates>", lon, ",", lat, "</gml:coordinates>",
+          "</gml:Point>",
+          "<Distance%20units=%27m%27>", radius, "</Distance>",
+        "</DWithin>",
+      "</Filter>"
   )
   grid_coords <- terra::crds(raster_template)
   
-  # Transform grid coordinates back to WGS84 for gSSURGO queries
-  grid_sf <- sf::st_as_sf(data.frame(x = grid_coords[, 1], y = grid_coords[, 2]),
-                          coords = c("x", "y"), crs = proj_crs)
-  grid_wgs84 <- sf::st_transform(grid_sf, wgs84_crs)
-  grid_coords_wgs84 <- sf::st_coordinates(grid_wgs84)
-  
-  # Query gSSURGO for each grid point to capture spatial variability
-  buffer_radius <- grid_spacing / 2
-  PEcAn.logger::logger.warn(
-    "Buffer radius set to grid_spacing/2 to avoid overlap",
-    "results may be biased due to lack of area weighting and incomplete spatial coverage."
-  )
-  mukeys_all <- c()
-  for (i in seq_len(nrow(grid_coords_wgs84))) {
-    # Extract coordinates for this grid point (not user input)
-    this_lon <- grid_coords_wgs84[i, 1]
-    this_lat <- grid_coords_wgs84[i, 2]
-    
-    # I ask the gSSURGO to find all the mukeys (loosely can be thought of soil type) within grid_spacing distance of each grid point location. 
-    # Basically I think of this as me going around and taking soil samples at each grid point.
-    #https://sdmdataaccess.nrcs.usda.gov/SpatialFilterHelp.htm
-    mu.Path <- paste0(
-      "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs?",
-      "SERVICE=WFS",
-      "&VERSION=1.1.0",
-      "&REQUEST=GetFeature&TYPENAME=MapunitPoly",
-      "&FILTER=",
-        "<Filter>",
-          "<DWithin>",
-            "<PropertyName>Geometry</PropertyName>",
-            "<gml:Point>",
-              "<gml:coordinates>", this_lon, ",", this_lat, "</gml:coordinates>",
-            "</gml:Point>",
-            "<Distance%20units=%27m%27>", buffer_radius, "</Distance>",
-          "</DWithin>",
-        "</Filter>",
-      "&OUTPUTFORMAT=XMLMukeyList"
-    )
-    
-    # XML handling with temp file
-    temp_file <- tempfile(fileext = ".xml")
-    xmll <- curl::curl_download(
-      mu.Path,
-      destfile = temp_file,
-      handle = curl::new_handle(ssl_verifypeer = FALSE, ssl_verifyhost = FALSE)
-    )
-    
-    # mukey extraction with error recovery
-    mukey_str <- tryCatch({
-      xml_doc <- XML::xmlParse(temp_file)
-      mapunit_nodes <- XML::getNodeSet(xml_doc, "//MapUnitKeyList")
-      
-      if (length(mapunit_nodes) > 0) {
-        mukey_data <- XML::xmlValue(mapunit_nodes[[1]])
-        if (!is.null(mukey_data) && nchar(trimws(mukey_data)) > 0) {
-          mukey_data
-        } else {
-          PEcAn.logger::logger.debug(paste("Empty MapUnitKeyList for coordinates", 
-                                           this_lat, ",", this_lon))
-          NULL
-        }
-      } else {
-        PEcAn.logger::logger.debug(paste("No MapUnitKeyList found for coordinates", 
-                                         this_lat, ",", this_lon, "skipping grid point"))
-        NULL
-      }
-    }, error = function(e) {
-      PEcAn.logger::logger.warn(paste("Failed to parse gSSURGO response for coordinates", 
-                                      this_lat, ",", this_lon, ":", e$message))
-      NULL
-    })
-    if (file.exists(temp_file)) unlink(temp_file)
-    if (is.null(mukey_str)) next
-    
-    mukeys <- strsplit(mukey_str, ",")[[1]]
-    if (length(mukeys) == 0) next
-    
-    mukeys_all <- c(mukeys_all, mukeys)
+  outfile <- paste(outdir, "/gSSURGO_site_1-650", sep = "")
+  xmll <- curl::curl_download(url = mu.Path, destfile = outfile, quiet = FALSE)
+
+  mukey_str <- as.character(XML::xpathApply(
+    doc = XML::xmlParse(xmll),
+    path = "//MapUnitKeyList",
+    fun = XML::xmlValue))
+  mukeys <- strsplit(mukey_str, ",")[[1]]
+
+  if (length(mukeys) == 0) {
+    PEcAn.logger::logger.error("No mapunit keys were found for this site.")
   }
 
   # mukey occurrences across all grid points
@@ -247,9 +196,11 @@ extract_soil_gssurgo <- function(outdir, lat, lon, size=1, grid_size=3, grid_spa
     
     # let's fit dirichlet for each depth level separately
     simulated.soil.props<-soilprop.new.grouped %>%
-      split(list(soilprop.new.grouped$DepthL, soilprop.new.grouped$mukey)) %>%
+      split(list(soilprop.new.grouped$DepthL, soilprop.new.grouped$mukey), drop = TRUE) %>%
       purrr::map_df(function(DepthL.Data){
         tryCatch({
+          #HO - Skip combos of DepthL and mukey that only have 1 item since they will not be particularly helpful for finding an MLE.
+          if(nrow(DepthL.Data) != 1){
           # I model the soil properties for this depth
           dir.model <-DepthL.Data[,c(1:3)] %>%
             as.matrix() %>%
@@ -294,6 +245,7 @@ extract_soil_gssurgo <- function(outdir, lat, lon, size=1, grid_size=3, grid_spa
                            "mukey",
                            "soil_organic_carbon_stock"))
           simulated.soil
+          }
         },
         error = function(e) {
           PEcAn.logger::logger.warn(conditionMessage(e))

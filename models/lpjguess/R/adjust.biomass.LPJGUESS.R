@@ -1,4 +1,3 @@
-
 ##' Adjust LPJ-GUESS individual's biomass
 ##' 
 ##' This function adjusts an LPJ-GUESS individual by calling the LPJ-GUESS allocation function (compiled C++)

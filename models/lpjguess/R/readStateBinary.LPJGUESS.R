@@ -14,7 +14,7 @@
 ##' @author Istem Fer
 readStateBinary <- function(out.path, npft){
   # test path
-  out.path = "/fs/data2/output/PEcAn_1000002393/out/1000458390"
+  out.path = "/home/carya/workflows/pecan_test/read_binary"
   setwd(out.path)
   
   
@@ -27,7 +27,8 @@ readStateBinary <- function(out.path, npft){
   Fluxes_list <- list()
   
   # open connection to the binary state file
-  zz <- file("0.state", "rb")
+  #zz <- file("0.state", "rb")
+  zz <- file("/home/carya/workflows/pecan_test")
   
   ##################### Class : Climate #####################
   Climate <- list()

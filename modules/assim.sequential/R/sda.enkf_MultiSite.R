@@ -317,14 +317,37 @@ sda.enkf.multisite <- function(settings,
   # weight matrix
   wt.mat <- matrix(NA, nrow = nens, ncol = nt)
   # Reading param samples------------------------------- 
-  #create params object using samples generated from TRAITS functions
-  if(restart_flag){
-    new.params <- new.params
-  } else {
-    if(!file.exists(file.path(settings$outdir, "samples.Rdata"))) PEcAn.logger::logger.severe("samples.Rdata cannot be found. Make sure you generate samples by running the get.parameter.samples function before running SDA.")
-    #Generate parameter needs to be run before this to generate the samples. This is hopefully done in the main workflow.
-    if(is.null(ensemble.samples)){
-      load(file.path(settings$outdir, "samples.Rdata"))
+    #create params object using samples generated from TRAITS functions
+    if(restart_flag){
+      new.params <- new.params
+    }else{
+      if(!file.exists(file.path(settings$outdir, "samples.Rdata"))) PEcAn.logger::logger.severe("samples.Rdata cannot be found. Make sure you generate samples by running the get.parameter.samples function before running SDA.")
+      #Generate parameter needs to be run before this to generate the samples. This is hopefully done in the main workflow.
+      if(is.null(ensemble.samples)){
+        load(file.path(settings$outdir, "samples.Rdata"))
+      }
+      #reformatting params
+      new.params <- sda_matchparam(conf.settings, ensemble.samples, site.ids, nens)
+    }
+      
+ 
+  #TODO: incorporate Phyllis's restart work
+  #sample all inputs specified in the settings$ensemble
+  #now looking into the xml
+  samp <- conf.settings$ensemble$samplingspace
+  #finding who has a parent
+  parents <- lapply(samp,'[[', 'parent')
+  #order parents based on the need of who has to be first
+  order <- names(samp)[lapply(parents, function(tr) which(names(samp) %in% tr)) %>% unlist()] 
+  #new ordered sampling space
+  samp.ordered <- samp[c(order, names(samp)[!(names(samp) %in% order)])]
+  #performing the sampling
+  inputs <- vector("list", length(conf.settings))
+  #for the tags specified in the xml, do the sampling for a random site and then replicate the same sample ids for the remaining sites for each ensemble member 
+  for (i in seq_along(samp.ordered)) {
+    random_site <- sample(1:length(conf.settings),1)
+    if (is.null(inputs[[random_site]])) {
+      inputs[[random_site]] <- list() 
     }
     #reformatting params
     new.params <- sda_matchparam(settings, ensemble.samples, site.ids, nens)

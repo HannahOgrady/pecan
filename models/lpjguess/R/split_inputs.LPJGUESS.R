@@ -1,5 +1,6 @@
 ## split LPJ-GUESS ncdf files into smaller time units to use in KF
 ##' @author Istem Fer
+
 ##' @name split_inputs.LPJGUESS
 ##' @title Split inputs for LPJ-GUESS model
 ##' @param settings PEcAn settings object
