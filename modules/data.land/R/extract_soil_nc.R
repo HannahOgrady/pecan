@@ -33,6 +33,8 @@ extract_soil_gssurgo<-function(outdir, lat, lon, size=1, radius=500, depths=c(0.
     "SERVICE=WFS",
     "&VERSION=1.1.0",
     "&REQUEST=GetFeature&TYPENAME=MapunitPoly",
+    "&OUTPUTFORMAT=XMLMukeyList",
+    "MAXFEATURES=10000",
     "&FILTER=",
       "<Filter>",
         "<DWithin>",
@@ -42,19 +44,16 @@ extract_soil_gssurgo<-function(outdir, lat, lon, size=1, radius=500, depths=c(0.
           "</gml:Point>",
           "<Distance%20units=%27m%27>", radius, "</Distance>",
         "</DWithin>",
-      "</Filter>",
-    "&OUTPUTFORMAT=XMLMukeyList"
+      "</Filter>"
   )
   
-  xmll <- curl::curl_download(
-    mu.Path,
-    ssl.verifyhost = FALSE,
-    ssl.verifypeer = FALSE)
+  outfile <- paste(outdir, "/gSSURGO_site_1-650", sep = "")
+  xmll <- curl::curl_download(url = mu.Path, destfile = outfile, quiet = FALSE)
 
-  mukey_str <- XML::xpathApply(
+  mukey_str <- as.character(XML::xpathApply(
     doc = XML::xmlParse(xmll),
     path = "//MapUnitKeyList",
-    fun = XML::xmlValue)
+    fun = XML::xmlValue))
   mukeys <- strsplit(mukey_str, ",")[[1]]
 
   if (length(mukeys) == 0) {
@@ -109,9 +108,11 @@ extract_soil_gssurgo<-function(outdir, lat, lon, size=1, radius=500, depths=c(0.
     
     # let's fit dirichlet for each depth level separately
     simulated.soil.props<-soilprop.new.grouped %>%
-      split(list(soilprop.new.grouped$DepthL, soilprop.new.grouped$mukey)) %>%
+      split(list(soilprop.new.grouped$DepthL, soilprop.new.grouped$mukey), drop = TRUE) %>%
       purrr::map_df(function(DepthL.Data){
         tryCatch({
+          #HO - Skip combos of DepthL and mukey that only have 1 item since they will not be particularly helpful for finding an MLE.
+          if(nrow(DepthL.Data) != 1){
           # I model the soil properties for this depth
           dir.model <-DepthL.Data[,c(1:3)]%>%
             as.matrix() %>%
@@ -131,6 +132,7 @@ extract_soil_gssurgo<-function(outdir, lat, lon, size=1, radius=500, depths=c(0.
                            "soil_depth",
                            "mukey"))
           simulated.soil
+          }
         },
         error = function(e) {
           PEcAn.logger::logger.warn(conditionMessage(e))

@@ -44,6 +44,7 @@ gSSURGO.Query <- function(mukeys,
                <Query>
                SELECT ',
                  paste(fixed_fields, collapse = ", "),
+               ",",
                  paste(qry_fields, collapse = ", "),
                  ' from mapunit
                join muaggatt on mapunit.mukey=muaggatt.mukey
