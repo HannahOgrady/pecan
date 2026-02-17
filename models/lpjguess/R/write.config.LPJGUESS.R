@@ -14,7 +14,6 @@
 ##' @export
 ##' @author Istem Fer, Tony Gardella
 write.config.LPJGUESS <- function(defaults, trait.values, settings, run.id, restart = NULL) {
-  
   # find out where to write run/ouput
   rundir <- file.path(settings$rundir, run.id)
   if (!file.exists(rundir)) {
@@ -256,9 +255,12 @@ write.insfile.LPJGUESS <- function(settings, trait.values, rundir, outdir, run.i
   guessins <- gsub("@CO2_FILE@", co2.file, guessins)
 
   
-  # write soil file path
-  soil.file <- settings$run$inputs$soil$path
-  guessins <- gsub("@SOIL_FILE@", soil.file, guessins)
+  # # write soil file path
+  # # when using cru input, it's also climate file
+  # soil.file <- settings$run$inputs$soil$path
+  # misc.file <- sub("\\.bin$", "misc.bin", soil.file)
+  # guessins <- gsub("@SOIL_FILE@", soil.file, guessins)
+  # guessins <- gsub("@MISC_FILE@", misc.file, guessins)
   
   if(is.localhost(settings$host)){
     settings$model$insfile <- file.path(settings$rundir, run.id, "guess.ins")
