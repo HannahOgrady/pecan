@@ -122,8 +122,69 @@ get.parameter.samples <- function(settings,
         independent <- FALSE
       }
     } else {
-      ma.results <- FALSE
-      # trait_mcmc_list[[i]] stays NULL (already initialized)
+      param.names[[i]] <- list()
+      samples.num <- 20000
+      PEcAn.logger::logger.info("No MCMC results for PFT", pft.names[i])
+      PEcAn.logger::logger.info(
+        "PFT", pft.names[i], "will use prior distributions for",
+        priors
+      )
+    }
+    if (is.null(priors)) priors <- param.names[[i]]
+
+    PEcAn.logger::logger.info("using ", samples.num, "samples per trait")
+    if (is.null(ens.sample.method)){
+      PEcAn.logger::logger.info("Sampling method is not defined, set to uniform")
+      q_samples <- matrix(stats::runif(samples.num * length(priors)),
+                          samples.num, 
+                          length(priors))
+    } else if(ens.sample.method == "halton") {
+      q_samples <- randtoolbox::halton(n = samples.num, dim = length(priors))
+    } else if (ens.sample.method == "sobol") {
+      q_samples <- randtoolbox::sobol(
+        n = samples.num,
+        dim = length(priors),
+        scrambling = 3
+      )
+    } else if (ens.sample.method == "torus") {
+      q_samples <- randtoolbox::torus(n = samples.num, dim = length(priors))
+    } else if (ens.sample.method == "lhc") {
+      q_samples <- PEcAn.emulator::lhc(
+        t(matrix(0:1, ncol = length(priors), nrow = 2)),
+        samples.num
+      )
+    } else if (ens.sample.method == "uniform") {
+      q_samples <- matrix(
+        stats::runif(samples.num * length(priors)),
+        samples.num,
+        length(priors)
+      )
+    } else {
+      PEcAn.logger::logger.info(
+        "Method ", ens.sample.method,
+        " has not been implemented yet, using uniform random sampling"
+      )
+      # uniform random
+      q_samples <- matrix(
+        stats::runif(samples.num * length(priors)),
+        samples.num,
+        length(priors)
+      )
+    }
+    for (prior in priors) {
+      if (prior %in% param.names[[i]]) {
+        samples <- distns$trait.mcmc[[prior]] %>%
+          purrr::map(~ .x[, "beta.o"]) %>%
+          unlist() %>%
+          as.matrix()
+      } else {
+        samples <- PEcAn.priors::get.sample(
+          distns$prior.distns[prior, ],
+          samples.num,
+          q_samples[, priors == prior]
+        )
+      }
+      trait.samples[[pft.name]][[prior]] <- samples
     }
   } ### End for loop
 
@@ -151,5 +212,8 @@ get.parameter.samples <- function(settings,
          file = file.path(settings$outdir, "samples.Rdata"))
   }
 
-  invisible(result)
-}
+  save(ensemble.samples, trait.samples, sa.samples, runs.samples, env.samples,
+    file = file.path(settings$outdir, "samples.Rdata")
+  )
+} # get.parameter.samples
+
